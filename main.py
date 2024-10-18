@@ -53,6 +53,23 @@ def le_usuario_por_id(id):
         usuarios = session.execute(comando_sql).fetchall()
         return usuarios[0][0]
 
+def modifica_usuario(id, **kwargs):
+  with Session(bind=engine) as session:
+    comando_sql = select(Usuario).filter_by(id=id)
+    usuarios = session.execute(comando_sql).fetchall()
+    for usuario in usuarios:
+      for key, value in kwargs.items():
+        setattr(usuario[0], key, value)
+    session.commit()
+
+def deleta_usuario(id):
+  with Session(bind=engine) as session:
+    comando_sql = select(Usuario).filter_by(id=id)
+    usuarios = session.execute(comando_sql).fetchall()
+    for usuario in usuarios:
+      session.delete(usuario[0])
+    session.commit()
+
 if __name__ == '__main__':
   #cria_usuarios(
   #  nome = 'Mateus Paiva',
@@ -65,6 +82,10 @@ if __name__ == '__main__':
   #print(usuario_0)
   #print(usuario_0.nome, usuario_0.senha, usuario_0.email)
 
-  usuario_mateus = le_usuario_por_id(id=1)
-  print(usuario_mateus)
-  print(usuario_mateus.nome, usuario_mateus.senha, usuario_mateus.email)
+  #usuario_mateus = le_usuario_por_id(id=1)
+  #print(usuario_mateus)
+  #print(usuario_mateus.nome, usuario_mateus.senha, usuario_mateus.email)
+
+  #modifica_usuario(id=1, email='novo_email@gmail.com')
+
+  deleta_usuario(id=1)
