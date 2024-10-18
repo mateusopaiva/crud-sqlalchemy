@@ -1,6 +1,7 @@
 from pathlib import Path
 from sqlalchemy import create_engine, String, Boolean, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 pasta_atual = Path(__file__).parent
 PATH_TO_BD = pasta_atual / 'bd_usuarios.sqlite'
@@ -13,12 +14,20 @@ class Usuario(Base):
 
   id: Mapped[int] = mapped_column(primary_key=True)
   nome: Mapped[str] = mapped_column(String(30))
-  senha: Mapped[str] = mapped_column(String(30))
+  senha: Mapped[str] = mapped_column(String(128))
   email: Mapped[str] = mapped_column(String(30))
   acesso_gestor: Mapped[bool] = mapped_column(Boolean(), default=False)
 
   def __repr__(self):
     return f"Usuario({self.id=}, {self.nome=})"
+  
+  def define_senha(self, senha):
+    self.senha = generate_password_hash(senha)
+
+  def verifica_senha(self, senha):
+    return check_password_hash(self.senha, senha)
+  
+
   
 engine = create_engine(f'sqlite:///{PATH_TO_BD}')
 Base.metadata.create_all(bind=engine)
@@ -33,10 +42,10 @@ def cria_usuarios(
   with Session(bind=engine) as session:
     usuario = Usuario(
       nome = nome,
-      senha = senha,
       email = email,
       **kwargs
     )
+    usuario.define_senha(senha)
     session.add(usuario)
     session.commit()
 
@@ -59,7 +68,10 @@ def modifica_usuario(id, **kwargs):
     usuarios = session.execute(comando_sql).fetchall()
     for usuario in usuarios:
       for key, value in kwargs.items():
-        setattr(usuario[0], key, value)
+        if key == 'senha':
+          usuario[0].define_senha(value)
+        else:
+          setattr(usuario[0], key, value)
     session.commit()
 
 def deleta_usuario(id):
@@ -88,4 +100,4 @@ if __name__ == '__main__':
 
   #modifica_usuario(id=1, email='novo_email@gmail.com')
 
-  deleta_usuario(id=1)
+  #deleta_usuario(id=1)
